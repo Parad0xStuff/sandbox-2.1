@@ -70,7 +70,7 @@
 	<div id="beepboxEditorContainer" style="width: 700px; height: 645px;"></div>
 	
 		<h1>
-			Sandbox 2.1.0
+			Sandbox 2.1.1
 		</h1>
 		<p id="introduction">
 			Sandbox is an online tool for sketching and sharing chiptune melodies. It was based off of Modded BeepBox, which is a mod for BeepBox, an online tool for sketching and sharing chiptune melodies.<br/><br/>
@@ -142,7 +142,10 @@
 					April 17, 2018: 2.0.5: Added "double sine" wave and "decay rounded" filter.<br/><br/>
 					April 21, 2018: 2.0.6: Added the "none" filter from vanilla BeepBox 2.3.<br/><br/>
 					April 23, 2018: 2.0.6.1: Fixed the position of the none filter.<br/><br/>
-					May 5, 2018: 2.1.0: Updated to the latest BeepBox update, renamed several rhythms, removed Detune, and removed Tick Drums.
+					May 5, 2018: 2.1.0: Updated to the latest BeepBox update, renamed several rhythms, removed Detune, and removed Tick Drums.<br/><br/>
+					May 8, 2018: 2.1.1: Fixed the Tempo Slider, re added the Bass Key, and re added the Detune slider.<br/>
+					<p style="margin-left:50px;">Note 1: The other keys, Treble, Alto, and Tenor might not be coming back<br/>
+					Note 2: The Detune Slider, as of now, has bugs when working with Union. This will be fixed in the future.</p><br/><br/>
 					</p>
 
 	<script type="text/javascript">
@@ -436,12 +439,13 @@ var beepbox;
     Config.pianoScaleFlags = [true, false, true, false, true, true, false, true, false, true, false, true];
     Config.blackKeyNameParents = [-1, 1, -1, 1, -1, 1, -1, -1, 1, -1, 1, -1];
     Config.pitchNames = ["C", null, "D", null, "E", "F", null, "G", null, "A", null, "B"];
-    Config.keyNames = ["B", "A♯", "A", "G♯", "G", "F♯", "F", "E", "D♯", "D", "C♯", "C"];
-    Config.keyTransposes = [23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12];
+    Config.keyNames = ["B", "A♯", "A", "G♯", "G", "F♯", "F", "E", "D♯", "D", "C♯", "C", "Bass"];
+    Config.keyTransposes = [23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 0];
     Config.tempoSteps = 24;
     Config.reverbRange = 4;
     Config.driveRange = 24;
     Config.muffRange = 24;
+    Config.detuneRange = 24;
     Config.beatsPerBarMin = 3;
     Config.beatsPerBarMax = 16;
     Config.barCountMin = 1;
@@ -971,13 +975,14 @@ var beepbox;
         Song.prototype.initToDefault = function (andResetChannels) {
             if (andResetChannels === void 0) { andResetChannels = true; }
             this.scale = 0;
-            this.key = Config.keyNames.length - 1;
+            this.key = Config.keyNames.length - 2;
             this.loopStart = 0;
             this.loopLength = 4;
             this.tempo = 7;
             this.reverb = 0;
             this.drive = 0;
             this.muff = 0;
+            this.detune = 0;
             this.beatsPerBar = 8;
             this.barCount = 16;
             this.patternsPerChannel = 8;
@@ -1032,6 +1037,7 @@ var beepbox;
             buffer.push(109, base64IntToCharCode[this.reverb]);
             buffer.push(120, base64IntToCharCode[this.drive]);
             buffer.push(121, base64IntToCharCode[this.muff]);
+            buffer.push(122, base64IntToCharCode[this.detune]);
             buffer.push(97, base64IntToCharCode[this.beatsPerBar - 1]);
             buffer.push(103, base64IntToCharCode[(this.barCount - 1) >> 6], base64IntToCharCode[(this.barCount - 1) & 0x3f]);
             buffer.push(106, base64IntToCharCode[this.patternsPerChannel - 1]);
@@ -1315,6 +1321,10 @@ var beepbox;
                 else if (command == 121) {
                     this.muff = base64CharCodeToInt[compressed.charCodeAt(charIndex++)];
                     this.muff = Song._clip(0, Config.muffRange, this.muff);
+                }       				
+                else if (command == 122) {
+                    this.detune = base64CharCodeToInt[compressed.charCodeAt(charIndex++)];
+                    this.detune = Song._clip(0, Config.detuneRange, this.detune);
                 }       				
                 else if (command == 97) {
                     if (beforeThree) {
@@ -1817,6 +1827,7 @@ var beepbox;
                 reverb: this.reverb,
                 drive: this.drive,
                 muff: this.muff,
+                detune: this.detune,
                 channels: channelArray,
             };
         };
@@ -1869,6 +1880,9 @@ var beepbox;
             }
             if (jsonObject.muff != undefined) {
                 this.muff = Song._clip(0, Config.muffRange, jsonObject.muff | 0);
+            }
+            if (jsonObject.detune != undefined) {
+                this.detune = Song._clip(0, Config.detuneRange, jsonObject.detune | 0);
             }
             if (jsonObject.beatsPerBar != undefined) {
                 this.beatsPerBar = Math.max(Config.beatsPerBarMin, Math.min(Config.beatsPerBarMax, jsonObject.beatsPerBar | 0));
@@ -2972,8 +2986,8 @@ var beepbox;
     }());
     Synth.negativePhaseGuard = 1000;
     Synth.generatedSynthesizers = {};
-    Synth.synthSourceTemplate = ("\n\t\t\tvar sampleTime = 1.0 / synth.samplesPerSecond;\n\t\t\tvar effectYMult = +synth.effectYMult;\n\t\t\tvar limitDecay = +synth.limitDecay;\n\t\t\tvar volume = +synth.volume;\n\t\t\tvar delayLine = synth.delayLine;\n\t\t\tvar reverb = Math.pow(song.reverb / beepbox.Config.reverbRange, 0.667) * 0.425; \n\t\t\tvar drive = Math.pow(song.drive / beepbox.Config.driveRange, 0.667) * 0.425; \n\t\t\tvar muff = Math.pow(song.muff / beepbox.Config.muffRange, 0.667) * 0.425; \n\t\t\tvar sineWave = beepbox.Config.sineWave;\n\t\t\t\n\t\t\t// Initialize instruments based on current pattern.\n\t\t\tvar instrumentChannel# = song.getPatternInstrument(#, synth.bar); // ALL\n\t\t\tvar instrument# = song.channels[#].instruments[instrumentChannel#]; // ALL\n\t\t\tvar channel#Wave = beepbox.Config.waves[instrument#.wave]; // CHIP\n\t\t\tvar channel#Wave = beepbox.Config.getDrumWave(instrument#.wave); // NOISE\n\t\t\tvar channel#WaveLength = channel#Wave.length; // CHIP\n\t\t\tvar channel#FilterBase = Math.pow(2, -beepbox.Config.filterBases[instrument#.filter] + (drive * 4) - (muff * 4)); // CHIP\n\t\t\tvar channel#TremoloScale = beepbox.Config.effectTremolos[instrument#.effect]; // PITCH\n\t\t\t\n\t\t\twhile (bufferIndex < bufferLength) {\n\t\t\t\t\n\t\t\t\tvar samples;\n\t\t\t\tvar samplesLeftInBuffer = bufferLength - bufferIndex;\n\t\t\t\tif (synth.arpeggioSampleCountdown <= samplesLeftInBuffer) {\n\t\t\t\t\tsamples = synth.arpeggioSampleCountdown;\n\t\t\t\t} else {\n\t\t\t\t\tsamples = samplesLeftInBuffer;\n\t\t\t\t}\n\t\t\t\tsynth.arpeggioSampleCountdown -= samples;\n\t\t\t\t\n\t\t\t\tvar time = synth.part + synth.beat * song.partsPerBeat;\n\t\t\t\t\n\t\t\t\tbeepbox.Synth.computeChannelInstrument(synth, song, #, time, sampleTime, samplesPerArpeggio, samples); // ALL\n\t\t\t\tvar synthChannel# = synth.channels[#]; // ALL\n\t\t\t\t\n\t\t\t\tvar channel#ChorusA = Math.pow(2.0, (beepbox.Config.chorusOffsets[instrument#.chorus] + beepbox.Config.chorusIntervals[instrument#.chorus]) / 12.0); // CHIP\n\t\t\t\tvar channel#ChorusB = Math.pow(2.0, (beepbox.Config.chorusOffsets[instrument#.chorus] - beepbox.Config.chorusIntervals[instrument#.chorus]) / 12.0); // CHIP\n\t\t\t\tvar channel#ChorusSign = synthChannel#.harmonyVolumeMult * beepbox.Config.chorusSigns[instrument#.chorus]; // CHIP\n\t\t\t\tif (instrument#.chorus == 0) synthChannel#.phases[1] = synthChannel#.phases[0]; // CHIP\n\t\t\t\tchannel#ChorusB *= synthChannel#.harmonyMult; // CHIP\n\t\t\t\tvar channel#ChorusDeltaRatio = channel#ChorusB / channel#ChorusA; // CHIP\n\t\t\t\t\n\t\t\t\tvar channel#PhaseDelta = synthChannel#.phaseDeltas[0] * channel#ChorusA; // CHIP\n\t\t\t\tvar channel#PhaseDelta = synthChannel#.phaseDeltas[0] / 32768.0; // NOISE\n\t\t\t\tvar channel#PhaseDeltaScale = synthChannel#.phaseDeltaScale; // ALL\n\t\t\t\tvar channel#Volume = synthChannel#.volumeStarts[0]; // CHIP\n\t\t\t\tvar channel#Volume = synthChannel#.volumeStarts[0]; // NOISE\n\t\t\t\tvar channel#VolumeDelta = synthChannel#.volumeDeltas[0]; // CHIP\n\t\t\t\tvar channel#VolumeDelta = synthChannel#.volumeDeltas[0]; // NOISE\n\t\t\t\tvar channel#Filter = synthChannel#.filter * channel#FilterBase; // CHIP\n\t\t\t\tvar channel#Filter = synthChannel#.filter; // NOISE\n\t\t\t\tvar channel#FilterScale = synthChannel#.filterScale; // CHIP\n\t\t\t\tvar channel#VibratoScale = synthChannel#.vibratoScale; // PITCH\n\t\t\t\t\n\t\t\t\tvar effectY     = Math.sin(synth.effectPhase);\n\t\t\t\tvar prevEffectY = Math.sin(synth.effectPhase - synth.effectAngle);\n\t\t\t\t\n\t\t\t\tvar channel#PhaseA = synth.channels[#].phases[0] % 1; // CHIP\n\t\t\t\tvar channel#PhaseB = synth.channels[#].phases[1] % 1; // CHIP\n\t\t\t\tvar channel#Phase  = synth.channels[#].phases[0] % 1; // NOISE\n\t\t\t\t\n\t\t\t\tvar channel#Operator$Phase       = ((synth.channels[#].phases[$] % 1) + " + Synth.negativePhaseGuard + ") * " + Config.sineWaveLength + "; // FM\n\t\t\t\tvar channel#Operator$PhaseDelta  = synthChannel#.phaseDeltas[$]; // FM\n\t\t\t\tvar channel#Operator$OutputMult  = synthChannel#.volumeStarts[$]; // FM\n\t\t\t\tvar channel#Operator$OutputDelta = synthChannel#.volumeDeltas[$]; // FM\n\t\t\t\tvar channel#Operator$Output      = synthChannel#.feedbackOutputs[$]; // FM\n\t\t\t\tvar channel#FeedbackMult         = synthChannel#.feedbackMult; // FM\n\t\t\t\tvar channel#FeedbackDelta        = synthChannel#.feedbackDelta; // FM\n\t\t\t\t\n\t\t\t\tvar channel#Sample = +synth.channels[#].sample; // ALL\n\t\t\t\t\n\t\t\t\tvar delayPos = 0|synth.delayPos;\n\t\t\t\tvar delayFeedback0 = +synth.delayFeedback0;\n\t\t\t\tvar delayFeedback1 = +synth.delayFeedback1;\n\t\t\t\tvar delayFeedback2 = +synth.delayFeedback2;\n\t\t\t\tvar delayFeedback3 = +synth.delayFeedback3;\n\t\t\t\tvar limit = +synth.limit;\n\t\t\t\t\n\t\t\t\twhile (samples) {\n\t\t\t\t\tvar channel#Vibrato = 1.0 + channel#VibratoScale * effectY; // PITCH\n\t\t\t\t\tvar channel#Tremolo = 1.0 + channel#TremoloScale * (effectY - 1.0); // PITCH\n\t\t\t\t\tvar temp = effectY;\n\t\t\t\t\teffectY = effectYMult * effectY - prevEffectY;\n\t\t\t\t\tprevEffectY = temp;\n\t\t\t\t\t\n\t\t\t\t\tchannel#Sample += ((channel#Wave[0|(channel#PhaseA * channel#WaveLength)] + channel#Wave[0|(channel#PhaseB * channel#WaveLength)] * channel#ChorusSign) * channel#Volume * channel#Tremolo - channel#Sample) * channel#Filter; // CHIP\n\t\t\t\t\tchannel#Sample += (channel#Wave[0|(channel#Phase * 32768.0)] * channel#Volume - channel#Sample) * channel#Filter; // NOISE\n\t\t\t\t\tchannel#Volume += channel#VolumeDelta; // CHIP\n\t\t\t\t\tchannel#Volume += channel#VolumeDelta; // NOISE\n\t\t\t\t\tchannel#PhaseA += channel#PhaseDelta * channel#Vibrato; // CHIP\n\t\t\t\t\tchannel#PhaseB += channel#PhaseDelta * channel#Vibrato * channel#ChorusDeltaRatio; // CHIP\n\t\t\t\t\tchannel#Phase += channel#PhaseDelta; // NOISE\n\t\t\t\t\tchannel#Filter *= channel#FilterScale; // CHIP\n\t\t\t\t\tchannel#PhaseA -= 0|channel#PhaseA; // CHIP\n\t\t\t\t\tchannel#PhaseB -= 0|channel#PhaseB; // CHIP\n\t\t\t\t\tchannel#Phase -= 0|channel#Phase; // NOISE\n\t\t\t\t\tchannel#PhaseDelta *= channel#PhaseDeltaScale; // CHIP\n\t\t\t\t\tchannel#PhaseDelta *= channel#PhaseDeltaScale; // NOISE\n\t\t\t\t\t\n\t\t\t\t\t// INSERT OPERATOR COMPUTATION HERE\n\t\t\t\t\tchannel#Sample = channel#Tremolo * (/*channel#Operator$Scaled*/); // CARRIER OUTPUTS\n\t\t\t\t\tchannel#FeedbackMult += channel#FeedbackDelta; // FM\n\t\t\t\t\tchannel#Operator$OutputMult += channel#Operator$OutputDelta; // FM\n\t\t\t\t\tchannel#Operator$Phase += channel#Operator$PhaseDelta * channel#Vibrato; // FM\n\t\t\t\t\tchannel#Operator$PhaseDelta *= channel#PhaseDeltaScale; // FM\n\t\t\t\t\t\n\t\t\t\t\t// Reverb, implemented using a feedback delay network with a Hadamard matrix and lowpass filters.\n\t\t\t\t\t// good ratios:    0.555235 + 0.618033 + 0.818 +   1.0 = 2.991268\n\t\t\t\t\t// Delay lengths:  3041     + 3385     + 4481  +  5477 = 16384 = 2^14\n\t\t\t\t\t// Buffer offsets: 3041    -> 6426   -> 10907 -> 16384\n\t\t\t\t\tvar delayPos1 = (delayPos +  3041) & 0x3FFF;\n\t\t\t\t\tvar delayPos2 = (delayPos +  6426) & 0x3FFF;\n\t\t\t\t\tvar delayPos3 = (delayPos + 10907) & 0x3FFF;\n\t\t\t\t\tvar delaySample0 = (delayLine[delayPos]\n\t\t\t\t\t\t+ channel#Sample // PITCH\n\t\t\t\t\t);\n\t\t\t\t\tvar delaySample1 = delayLine[delayPos1];\n\t\t\t\t\tvar delaySample2 = delayLine[delayPos2];\n\t\t\t\t\tvar delaySample3 = delayLine[delayPos3];\n\t\t\t\t\tvar delayTemp0 = -delaySample0 + delaySample1;\n\t\t\t\t\tvar delayTemp1 = -delaySample0 - delaySample1;\n\t\t\t\t\tvar delayTemp2 = -delaySample2 + delaySample3;\n\t\t\t\t\tvar delayTemp3 = -delaySample2 - delaySample3;\n\t\t\t\t\tdelayFeedback0 += ((delayTemp0 + delayTemp2) * reverb - delayFeedback0) * 0.5;\n\t\t\t\t\tdelayFeedback1 += ((delayTemp1 + delayTemp3) * reverb - delayFeedback1) * 0.5;\n\t\t\t\t\tdelayFeedback2 += ((delayTemp0 - delayTemp2) * reverb - delayFeedback2) * 0.5;\n\t\t\t\t\tdelayFeedback3 += ((delayTemp1 - delayTemp3) * reverb - delayFeedback3) * 0.5;\n\t\t\t\t\tdelayLine[delayPos1] = delayFeedback0;\n\t\t\t\t\tdelayLine[delayPos2] = delayFeedback1;\n\t\t\t\t\tdelayLine[delayPos3] = delayFeedback2;\n\t\t\t\t\tdelayLine[delayPos ] = delayFeedback3;\n\t\t\t\t\tdelayPos = (delayPos + 1) & 0x3FFF;\n\t\t\t\t\t\n\t\t\t\t\tvar sample = delaySample0 + delaySample1 + delaySample2 + delaySample3\n\t\t\t\t\t\t+ channel#Sample // NOISE\n\t\t\t\t\t;\n\t\t\t\t\t\n\t\t\t\t\tvar abs = sample < 0.0 ? -sample : sample;\n\t\t\t\t\tlimit -= limitDecay;\n\t\t\t\t\tif (limit < abs) limit = abs;\n\t\t\t\t\tsample /= limit * 0.75 + 0.25;\n\t\t\t\t\tsample *= volume;\n\t\t\t\t\tdata[bufferIndex] = sample;\n\t\t\t\t\tbufferIndex++;\n\t\t\t\t\tsamples--;\n\t\t\t\t}\n\t\t\t\t\n\t\t\t\tsynthChannel#.phases[0] = channel#PhaseA; // CHIP\n\t\t\t\tsynthChannel#.phases[1] = channel#PhaseB; // CHIP\n\t\t\t\tsynthChannel#.phases[0] = channel#Phase; // NOISE\n\t\t\t\tsynthChannel#.phases[$] = channel#Operator$Phase / " + Config.sineWaveLength + "; // FM\n\t\t\t\tsynthChannel#.feedbackOutputs[$] = channel#Operator$Output; // FM\n\t\t\t\tsynthChannel#.sample = channel#Sample; // ALL\n\t\t\t\t\n\t\t\t\tsynth.delayPos = delayPos;\n\t\t\t\tsynth.delayFeedback0 = delayFeedback0;\n\t\t\t\tsynth.delayFeedback1 = delayFeedback1;\n\t\t\t\tsynth.delayFeedback2 = delayFeedback2;\n\t\t\t\tsynth.delayFeedback3 = delayFeedback3;\n\t\t\t\tsynth.limit = limit;\n\t\t\t\t\n\t\t\t\tif (effectYMult * effectY - prevEffectY > prevEffectY) {\n\t\t\t\t\tsynth.effectPhase = Math.asin(effectY);\n\t\t\t\t} else {\n\t\t\t\t\tsynth.effectPhase = Math.PI - Math.asin(effectY);\n\t\t\t\t}\n\t\t\t\t\n\t\t\t\tif (synth.arpeggioSampleCountdown == 0) {\n\t\t\t\t\tsynth.arpeggio++;\n\t\t\t\t\tsynth.arpeggioSampleCountdown = samplesPerArpeggio;\n\t\t\t\t\tif (synth.arpeggio == 4) {\n\t\t\t\t\t\tsynth.arpeggio = 0;\n\t\t\t\t\t\tsynth.part++;\n\t\t\t\t\t\tif (synth.part == song.partsPerBeat) {\n\t\t\t\t\t\t\tsynth.part = 0;\n\t\t\t\t\t\t\tsynth.beat++;\n\t\t\t\t\t\t\tif (synth.beat == song.beatsPerBar) {\n\t\t\t\t\t\t\t\t// The bar ended, may need to regenerate synthesizer.\n\t\t\t\t\t\t\t\treturn bufferIndex;\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t\t\n\t\t\t// Indicate that the buffer is finished generating.\n\t\t\treturn -1;\n\t\t").split("\n");
     Synth.operatorSourceTemplate = ("\n\t\t\t\t\t\tvar channel#Operator$PhaseMix = channel#Operator$Phase/* + channel#Operator@Scaled*/;\n\t\t\t\t\t\tvar channel#Operator$PhaseInt = channel#Operator$PhaseMix|0;\n\t\t\t\t\t\tvar channel#Operator$Index    = channel#Operator$PhaseInt & " + Config.sineWaveMask + ";\n\t\t\t\t\t\tvar channel#Operator$Sample   = sineWave[channel#Operator$Index];\n\t\t\t\t\t\tchannel#Operator$Output       = channel#Operator$Sample + (sineWave[channel#Operator$Index + 1] - channel#Operator$Sample) * (channel#Operator$PhaseMix - channel#Operator$PhaseInt);\n\t\t\t\t\t\tvar channel#Operator$Scaled   = channel#Operator$OutputMult * channel#Operator$Output;\n\t\t").split("\n");
+    Synth.synthSourceTemplate = ("\n\t\t\tvar sampleTime = 1.0 / synth.samplesPerSecond;\n\t\t\tvar effectYMult = +synth.effectYMult;\n\t\t\tvar limitDecay = +synth.limitDecay;\n\t\t\tvar volume = +synth.volume;\n\t\t\tvar delayLine = synth.delayLine;\n\t\t\tvar reverb = Math.pow(song.reverb / beepbox.Config.reverbRange, 0.667) * 0.425; \n\t\t\tvar drive = Math.pow(song.drive / beepbox.Config.driveRange, 0.667) * 0.425; \n\t\t\tvar muff = Math.pow(song.muff / beepbox.Config.muffRange, 0.667) * 0.425;  \n\t\t\tvar detune = Math.pow(song.detune / beepbox.Config.detuneRange, 0.667) * 0.425; \n\t\t\tvar sineWave = beepbox.Config.sineWave;\n\t\t\t\n\t\t\t// Initialize instruments based on current pattern.\n\t\t\tvar instrumentChannel# = song.getPatternInstrument(#, synth.bar); // ALL\n\t\t\tvar instrument# = song.channels[#].instruments[instrumentChannel#]; // ALL\n\t\t\tvar channel#Wave = beepbox.Config.waves[instrument#.wave]; // CHIP\n\t\t\tvar channel#Wave = beepbox.Config.getDrumWave(instrument#.wave); // NOISE\n\t\t\tvar channel#WaveLength = channel#Wave.length; // CHIP\n\t\t\tvar channel#FilterBase = Math.pow(2, -beepbox.Config.filterBases[instrument#.filter] + (drive * 4) - (muff * 4)); // CHIP\n\t\t\tvar channel#TremoloScale = beepbox.Config.effectTremolos[instrument#.effect]; // PITCH\n\t\t\t\n\t\t\twhile (bufferIndex < bufferLength) {\n\t\t\t\t\n\t\t\t\tvar samples;\n\t\t\t\tvar samplesLeftInBuffer = bufferLength - bufferIndex;\n\t\t\t\tif (synth.arpeggioSampleCountdown <= samplesLeftInBuffer) {\n\t\t\t\t\tsamples = synth.arpeggioSampleCountdown;\n\t\t\t\t} else {\n\t\t\t\t\tsamples = samplesLeftInBuffer;\n\t\t\t\t}\n\t\t\t\tsynth.arpeggioSampleCountdown -= samples;\n\t\t\t\t\n\t\t\t\tvar time = synth.part + synth.beat * song.partsPerBeat;\n\t\t\t\t\n\t\t\t\tbeepbox.Synth.computeChannelInstrument(synth, song, #, time, sampleTime, samplesPerArpeggio, samples); // ALL\n\t\t\t\tvar synthChannel# = synth.channels[#]; // ALL\n\t\t\t\t\n\t\t\t\tvar channel#ChorusA = Math.pow(2.0, (beepbox.Config.chorusOffsets[instrument#.chorus] + beepbox.Config.chorusIntervals[instrument#.chorus]) / 12.0); // CHIP\n\t\t\t\tvar channel#ChorusB = Math.pow(2.0, (beepbox.Config.chorusOffsets[instrument#.chorus] - beepbox.Config.chorusIntervals[instrument#.chorus] + (detune * 12)) / 12.0); // CHIP\n\t\t\t\tvar channel#ChorusSign = synthChannel#.harmonyVolumeMult * beepbox.Config.chorusSigns[instrument#.chorus]; // CHIP\n\t\t\t\tif (instrument#.chorus == 0) synthChannel#.phases[1] = synthChannel#.phases[0]; // CHIP\n\t\t\t\tchannel#ChorusB *= synthChannel#.harmonyMult; // CHIP\n\t\t\t\tvar channel#ChorusDeltaRatio = channel#ChorusB / channel#ChorusA; // CHIP\n\t\t\t\t\n\t\t\t\tvar channel#PhaseDelta = synthChannel#.phaseDeltas[0] * channel#ChorusA; // CHIP\n\t\t\t\tvar channel#PhaseDelta = synthChannel#.phaseDeltas[0] / 32768.0; // NOISE\n\t\t\t\tvar channel#PhaseDeltaScale = synthChannel#.phaseDeltaScale; // ALL\n\t\t\t\tvar channel#Volume = synthChannel#.volumeStarts[0]; // CHIP\n\t\t\t\tvar channel#Volume = synthChannel#.volumeStarts[0]; // NOISE\n\t\t\t\tvar channel#VolumeDelta = synthChannel#.volumeDeltas[0]; // CHIP\n\t\t\t\tvar channel#VolumeDelta = synthChannel#.volumeDeltas[0]; // NOISE\n\t\t\t\tvar channel#Filter = synthChannel#.filter * channel#FilterBase; // CHIP\n\t\t\t\tvar channel#Filter = synthChannel#.filter; // NOISE\n\t\t\t\tvar channel#FilterScale = synthChannel#.filterScale; // CHIP\n\t\t\t\tvar channel#VibratoScale = synthChannel#.vibratoScale; // PITCH\n\t\t\t\t\n\t\t\t\tvar effectY     = Math.sin(synth.effectPhase);\n\t\t\t\tvar prevEffectY = Math.sin(synth.effectPhase - synth.effectAngle);\n\t\t\t\t\n\t\t\t\tvar channel#PhaseA = synth.channels[#].phases[0] % 1; // CHIP\n\t\t\t\tvar channel#PhaseB = synth.channels[#].phases[1] % 1; // CHIP\n\t\t\t\tvar channel#Phase  = synth.channels[#].phases[0] % 1; // NOISE\n\t\t\t\t\n\t\t\t\tvar channel#Operator$Phase       = ((synth.channels[#].phases[$] % 1) + " + Synth.negativePhaseGuard + ") * " + Config.sineWaveLength + "; // FM\n\t\t\t\tvar channel#Operator$PhaseDelta  = synthChannel#.phaseDeltas[$]; // FM\n\t\t\t\tvar channel#Operator$OutputMult  = synthChannel#.volumeStarts[$]; // FM\n\t\t\t\tvar channel#Operator$OutputDelta = synthChannel#.volumeDeltas[$]; // FM\n\t\t\t\tvar channel#Operator$Output      = synthChannel#.feedbackOutputs[$]; // FM\n\t\t\t\tvar channel#FeedbackMult         = synthChannel#.feedbackMult; // FM\n\t\t\t\tvar channel#FeedbackDelta        = synthChannel#.feedbackDelta; // FM\n\t\t\t\t\n\t\t\t\tvar channel#Sample = +synth.channels[#].sample; // ALL\n\t\t\t\t\n\t\t\t\tvar delayPos = 0|synth.delayPos;\n\t\t\t\tvar delayFeedback0 = +synth.delayFeedback0;\n\t\t\t\tvar delayFeedback1 = +synth.delayFeedback1;\n\t\t\t\tvar delayFeedback2 = +synth.delayFeedback2;\n\t\t\t\tvar delayFeedback3 = +synth.delayFeedback3;\n\t\t\t\tvar limit = +synth.limit;\n\t\t\t\t\n\t\t\t\twhile (samples) {\n\t\t\t\t\tvar channel#Vibrato = 1.0 + channel#VibratoScale * effectY; // PITCH\n\t\t\t\t\tvar channel#Tremolo = 1.0 + channel#TremoloScale * (effectY - 1.0); // PITCH\n\t\t\t\t\tvar temp = effectY;\n\t\t\t\t\teffectY = effectYMult * effectY - prevEffectY;\n\t\t\t\t\tprevEffectY = temp;\n\t\t\t\t\t\n\t\t\t\t\tchannel#Sample += ((channel#Wave[0|(channel#PhaseA * channel#WaveLength)] + channel#Wave[0|(channel#PhaseB * channel#WaveLength)] * channel#ChorusSign) * channel#Volume * channel#Tremolo - channel#Sample) * channel#Filter; // CHIP\n\t\t\t\t\tchannel#Sample += (channel#Wave[0|(channel#Phase * 32768.0)] * channel#Volume - channel#Sample) * channel#Filter; // NOISE\n\t\t\t\t\tchannel#Volume += channel#VolumeDelta; // CHIP\n\t\t\t\t\tchannel#Volume += channel#VolumeDelta; // NOISE\n\t\t\t\t\tchannel#PhaseA += channel#PhaseDelta * channel#Vibrato; // CHIP\n\t\t\t\t\tchannel#PhaseB += channel#PhaseDelta * channel#Vibrato * channel#ChorusDeltaRatio; // CHIP\n\t\t\t\t\tchannel#Phase += channel#PhaseDelta; // NOISE\n\t\t\t\t\tchannel#Filter *= channel#FilterScale; // CHIP\n\t\t\t\t\tchannel#PhaseA -= 0|channel#PhaseA; // CHIP\n\t\t\t\t\tchannel#PhaseB -= 0|channel#PhaseB; // CHIP\n\t\t\t\t\tchannel#Phase -= 0|channel#Phase; // NOISE\n\t\t\t\t\tchannel#PhaseDelta *= channel#PhaseDeltaScale; // CHIP\n\t\t\t\t\tchannel#PhaseDelta *= channel#PhaseDeltaScale; // NOISE\n\t\t\t\t\t\n\t\t\t\t\t// INSERT OPERATOR COMPUTATION HERE\n\t\t\t\t\tchannel#Sample = channel#Tremolo * (/*channel#Operator$Scaled*/); // CARRIER OUTPUTS\n\t\t\t\t\tchannel#FeedbackMult += channel#FeedbackDelta; // FM\n\t\t\t\t\tchannel#Operator$OutputMult += channel#Operator$OutputDelta; // FM\n\t\t\t\t\tchannel#Operator$Phase += channel#Operator$PhaseDelta * channel#Vibrato; // FM\n\t\t\t\t\tchannel#Operator$PhaseDelta *= channel#PhaseDeltaScale; // FM\n\t\t\t\t\t\n\t\t\t\t\t// Reverb, implemented using a feedback delay network with a Hadamard matrix and lowpass filters.\n\t\t\t\t\t// good ratios:    0.555235 + 0.618033 + 0.818 +   1.0 = 2.991268\n\t\t\t\t\t// Delay lengths:  3041     + 3385     + 4481  +  5477 = 16384 = 2^14\n\t\t\t\t\t// Buffer offsets: 3041    -> 6426   -> 10907 -> 16384\n\t\t\t\t\tvar delayPos1 = (delayPos +  3041) & 0x3FFF;\n\t\t\t\t\tvar delayPos2 = (delayPos +  6426) & 0x3FFF;\n\t\t\t\t\tvar delayPos3 = (delayPos + 10907) & 0x3FFF;\n\t\t\t\t\tvar delaySample0 = (delayLine[delayPos]\n\t\t\t\t\t\t+ channel#Sample // PITCH\n\t\t\t\t\t);\n\t\t\t\t\tvar delaySample1 = delayLine[delayPos1];\n\t\t\t\t\tvar delaySample2 = delayLine[delayPos2];\n\t\t\t\t\tvar delaySample3 = delayLine[delayPos3];\n\t\t\t\t\tvar delayTemp0 = -delaySample0 + delaySample1;\n\t\t\t\t\tvar delayTemp1 = -delaySample0 - delaySample1;\n\t\t\t\t\tvar delayTemp2 = -delaySample2 + delaySample3;\n\t\t\t\t\tvar delayTemp3 = -delaySample2 - delaySample3;\n\t\t\t\t\tdelayFeedback0 += ((delayTemp0 + delayTemp2) * reverb - delayFeedback0) * 0.5;\n\t\t\t\t\tdelayFeedback1 += ((delayTemp1 + delayTemp3) * reverb - delayFeedback1) * 0.5;\n\t\t\t\t\tdelayFeedback2 += ((delayTemp0 - delayTemp2) * reverb - delayFeedback2) * 0.5;\n\t\t\t\t\tdelayFeedback3 += ((delayTemp1 - delayTemp3) * reverb - delayFeedback3) * 0.5;\n\t\t\t\t\tdelayLine[delayPos1] = delayFeedback0;\n\t\t\t\t\tdelayLine[delayPos2] = delayFeedback1;\n\t\t\t\t\tdelayLine[delayPos3] = delayFeedback2;\n\t\t\t\t\tdelayLine[delayPos ] = delayFeedback3;\n\t\t\t\t\tdelayPos = (delayPos + 1) & 0x3FFF;\n\t\t\t\t\t\n\t\t\t\t\tvar sample = delaySample0 + delaySample1 + delaySample2 + delaySample3\n\t\t\t\t\t\t+ channel#Sample // NOISE\n\t\t\t\t\t;\n\t\t\t\t\t\n\t\t\t\t\tvar abs = sample < 0.0 ? -sample : sample;\n\t\t\t\t\tlimit -= limitDecay;\n\t\t\t\t\tif (limit < abs) limit = abs;\n\t\t\t\t\tsample /= limit * 0.75 + 0.25;\n\t\t\t\t\tsample *= volume;\n\t\t\t\t\tdata[bufferIndex] = sample;\n\t\t\t\t\tbufferIndex++;\n\t\t\t\t\tsamples--;\n\t\t\t\t}\n\t\t\t\t\n\t\t\t\tsynthChannel#.phases[0] = channel#PhaseA; // CHIP\n\t\t\t\tsynthChannel#.phases[1] = channel#PhaseB; // CHIP\n\t\t\t\tsynthChannel#.phases[0] = channel#Phase; // NOISE\n\t\t\t\tsynthChannel#.phases[$] = channel#Operator$Phase / " + Config.sineWaveLength + "; // FM\n\t\t\t\tsynthChannel#.feedbackOutputs[$] = channel#Operator$Output; // FM\n\t\t\t\tsynthChannel#.sample = channel#Sample; // ALL\n\t\t\t\t\n\t\t\t\tsynth.delayPos = delayPos;\n\t\t\t\tsynth.delayFeedback0 = delayFeedback0;\n\t\t\t\tsynth.delayFeedback1 = delayFeedback1;\n\t\t\t\tsynth.delayFeedback2 = delayFeedback2;\n\t\t\t\tsynth.delayFeedback3 = delayFeedback3;\n\t\t\t\tsynth.limit = limit;\n\t\t\t\t\n\t\t\t\tif (effectYMult * effectY - prevEffectY > prevEffectY) {\n\t\t\t\t\tsynth.effectPhase = Math.asin(effectY);\n\t\t\t\t} else {\n\t\t\t\t\tsynth.effectPhase = Math.PI - Math.asin(effectY);\n\t\t\t\t}\n\t\t\t\t\n\t\t\t\tif (synth.arpeggioSampleCountdown == 0) {\n\t\t\t\t\tsynth.arpeggio++;\n\t\t\t\t\tsynth.arpeggioSampleCountdown = samplesPerArpeggio;\n\t\t\t\t\tif (synth.arpeggio == 4) {\n\t\t\t\t\t\tsynth.arpeggio = 0;\n\t\t\t\t\t\tsynth.part++;\n\t\t\t\t\t\tif (synth.part == song.partsPerBeat) {\n\t\t\t\t\t\t\tsynth.part = 0;\n\t\t\t\t\t\t\tsynth.beat++;\n\t\t\t\t\t\t\tif (synth.beat == song.beatsPerBar) {\n\t\t\t\t\t\t\t\t// The bar ended, may need to regenerate synthesizer.\n\t\t\t\t\t\t\t\treturn bufferIndex;\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t\t\n\t\t\t// Indicate that the buffer is finished generating.\n\t\t\treturn -1;\n\t\t").split("\n");
     beepbox.Synth = Synth;
 })(beepbox || (beepbox = {}));
 var beepbox;
@@ -4177,6 +4191,20 @@ var beepbox;
         return ChangeMuff;
     }(beepbox.Change));
     beepbox.ChangeMuff = ChangeMuff;
+	var ChangeDetune = (function (_super) {
+        __extends(ChangeDetune, _super);
+        function ChangeDetune(doc, oldValue, newValue) {
+            var _this = _super.call(this) || this;
+            _this.oldValue = oldValue;
+            doc.song.detune = newValue;
+            doc.notifier.changed();
+            if (oldValue != newValue)
+                _this._didSomething();
+            return _this;
+        }
+        return ChangeDetune;
+    }(beepbox.Change));
+    beepbox.ChangeDetune = ChangeDetune;
     var ChangeNoteAdded = (function (_super) {
         __extends(ChangeNoteAdded, _super);
         function ChangeNoteAdded(doc, pattern, note, index, deletion) {
@@ -7629,10 +7657,11 @@ var beepbox;
             ]);
             this._scaleSelect = buildOptions(select({}), beepbox.Config.scaleNames);
             this._keySelect = buildOptions(select({}), beepbox.Config.keyNames);
-            this._tempoSlider = new Slider(input({ style: "margin: 0px;", type: "range", min: "0", max: beepbox.Config.tempoSteps - 1, value: "7", step: "1" }), this._doc, function (oldValue, newValue) { return new beepbox.ChangeTempo(_this._doc, oldValue, newValue); });
+            this._tempoSlider = new Slider(input({ style: "margin: 0px;", type: "range", min: "0", max: beepbox.Config.tempoSteps - 1, value: "7", step: "0.5" }), this._doc, function (oldValue, newValue) { return new beepbox.ChangeTempo(_this._doc, oldValue, newValue); });
             this._reverbSlider = new Slider(input({ style: "margin: 0px;", type: "range", min: "0", max: beepbox.Config.reverbRange - 1, value: "0", step: "1" }), this._doc, function (oldValue, newValue) { return new beepbox.ChangeReverb(_this._doc, oldValue, newValue); });
             this._driveSlider = new Slider(input({ style: "margin: 0px;", type: "range", min: "0", max: beepbox.Config.driveRange - 1, value: "0", step: "1" }), this._doc, function (oldValue, newValue) { return new beepbox.ChangeDrive(_this._doc, oldValue, newValue); });
             this._muffSlider = new Slider(input({ style: "margin: 0px;", type: "range", min: "0", max: beepbox.Config.muffRange - 1, value: "0", step: "1" }), this._doc, function (oldValue, newValue) { return new beepbox.ChangeMuff(_this._doc, oldValue, newValue); });
+            this._detuneSlider = new Slider(input({ style: "margin: 0px;", type: "range", min: "0", max: beepbox.Config.detuneRange - 1, value: "0", step: "1" }), this._doc, function (oldValue, newValue) { return new beepbox.ChangeDetune(_this._doc, oldValue, newValue); });
             this._partSelect = buildOptions(select({}), beepbox.Config.partNames);
             this._instrumentTypeSelect = buildOptions(select({}), beepbox.Config.pitchChannelTypeNames);
             this._instrumentTypeHint = beepbox.html.element("a", { className: "hintButton" }, [text("?")]);
@@ -7686,7 +7715,7 @@ var beepbox;
             this.mainLayer = div({ className: "beepboxEditor", tabIndex: "0" }, [
                 this._editorBox,
                 div({ className: "editor-widget-column" }, [
-                    div({ style: "text-align: center; color: #999;" }, [text("Sandbox 2.1")]),
+                    div({ style: "text-align: center; color: #999;" }, [text("Sandbox 2.1.1")]),
                     div({ className: "editor-widgets" }, [
                         div({ className: "editor-controls" }, [
                             div({ className: "playback-controls" }, [
@@ -7736,6 +7765,7 @@ var beepbox;
                                     span({}, [text("Tempo: ")]),
                                     this._tempoSlider.input,
                                 ]),
+								
                                 div({ className: "selectRow" }, [
                                     span({}, [text("Reverb: ")]),
                                     this._reverbSlider.input,
@@ -7747,6 +7777,10 @@ var beepbox;
                                 div({ className: "selectRow" }, [
                                     span({}, [text("Muffle: ")]),
                                     this._muffSlider.input,
+                                ]),
+                                div({ className: "selectRow" }, [
+                                    span({}, [text("Detune: ")]),
+                                    this._detuneSlider.input,
                                 ]),
                                 div({ className: "selectRow" }, [
                                     span({}, [text("Rhythm: ")]),
@@ -7804,6 +7838,7 @@ var beepbox;
                 _this._reverbSlider.updateValue(_this._doc.song.reverb);
                 _this._driveSlider.updateValue(_this._doc.song.drive);
                 _this._muffSlider.updateValue(_this._doc.song.muff);
+                _this._detuneSlider.updateValue(_this._doc.song.detune);
                 setSelectedIndex(_this._partSelect, beepbox.Config.partCounts.indexOf(_this._doc.song.partsPerBeat));
                 if (_this._doc.song.getChannelIsDrum(_this._doc.channel)) {
                     _this._instrumentVolumeSliderRow.style.display = "";
