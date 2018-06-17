@@ -70,7 +70,7 @@
 	<div id="beepboxEditorContainer" style="width: 700px; height: 645px;"></div>
 	
 		<h1>
-			Sandbox 2.1.2
+			Sandbox 2.1.3
 		</h1>
 		<p id="introduction">
 			Sandbox is an online tool for sketching and sharing chiptune melodies. It was based off of Modded BeepBox, which is a mod for BeepBox, an online tool for sketching and sharing chiptune melodies.<br/><br/>
@@ -147,6 +147,7 @@
 					<p style="margin-left:50px;">Note 1: The other keys, Treble, Alto, and Tenor might not be coming back<br/>
 					Note 2: The Detune Slider, as of now, has bugs when working with Union. This will be fixed in the future.</p><br/>
 					Jun. 15, 2018: 2.1.2: Happy anniversary! We've decided to add two Poniryoshk's (Contrabassoon (Wave) and Flute (FM)), along with a new Filter and new Frequency.<br/><br/>
+					Jun. 17, 2018: 2.1.3: Fixed Contrabassoon's name. Added a new Envelope, Swap, a new Effect, Quiver Delayed, a new Drum, Trill, and added a lot more Feedback options to FM, along with an Algorithm.<br/><br/>
 					</p>
 
 	<script type="text/javascript">
@@ -387,6 +388,17 @@ var beepbox;
                         drumBuffer = newBuffer;
                     }
                 }
+                else if (index == 11) {
+                    var drumBuffer = 1;
+                    for (var i = 0; i < 32768; i++) {
+                        wave[i] = (drumBuffer & 1) / 4.0 * Math.random(1, 15);
+                        var newBuffer = drumBuffer >> 2;
+                        if (((drumBuffer + newBuffer) & 1) == 1) {
+                            newBuffer -= 4 << 2;
+                        }
+                        drumBuffer = newBuffer;
+                    }
+                }
                 else {
                     throw new Error("Unrecognized drum index: " + index);
                 }
@@ -457,23 +469,23 @@ var beepbox;
     Config.instrumentsPerChannelMax = 10;
     Config.partNames = ["÷2 (quavers)", "÷3 (triplets)", "÷4 (standard)", "÷5 (quintuplets)", "÷6 (triplets +)", "÷8 (standard +)", "÷9 (nice)", "÷12 (hybrid)", "÷16 (arpfest)", "÷24 (hybrid +)", "÷50 (freestyle)"];
     Config.partCounts = [2, 3, 4, 5, 6, 8, 9, 12, 16, 24, 50];
-    Config.waveNames = ["triangle", "square", "pulse wide", "pulse narrow", "sawtooth", "double saw", "double pulse", "spiky", "plateau", "glitch", "lute", "squaretooth", "lyre", "tuba", "piccolo", "shrill lute", "bassoon", "shrill bass", "nes pulse", "saw bass", "euphonium", "shrill pulse", "r-sawtooth", "recorder", "narrow saw", "deep square", "ring pulse", "sinusoid", "double sine", "Contrabassoon"]; // The place to add these is around line 640.
+    Config.waveNames = ["triangle", "square", "pulse wide", "pulse narrow", "sawtooth", "double saw", "double pulse", "spiky", "plateau", "glitch", "lute", "squaretooth", "lyre", "tuba", "piccolo", "shrill lute", "bassoon", "shrill bass", "nes pulse", "saw bass", "euphonium", "shrill pulse", "r-sawtooth", "recorder", "narrow saw", "deep square", "ring pulse", "sinusoid", "double sine", "contrabassoon"]; // The place to add these is around line 640.
     Config.waveVolumes = [1.0, 0.5, 0.5, 0.5, 0.65, 0.5, 0.4, 0.4, 0.94, 0.5, 0.5, 0.25, 0.15, 0.4, 0.4, 0.94, 0.5, 0.5, 0.4, 0.25, 0.3, 0.3, 0.2, 0.2, 1.2, 1.0, 1.0, 1.7, 1.0, 0.5];
-    Config.drumNames = ["retro", "white", "clang", "buzz", "hollow", "chime", "harsh", "static", "metallic", "empty", "cutter"]; // The place to add these is around line 290.
-    Config.drumVolumes = [0.25, 1.0, 0.4, 0.3, 1.5, 2, 10, 0.27, 1.0, 1.0, 0.25];
-    Config.drumBasePitches = [69, 69, 69, 69, 96, 69, 69, 96, 96, 96, 96, 69];
-    Config.drumPitchFilterMult = [100.0, 8.0, 100.0, 100.0, 1.0, 1.0, 1.0, 100.0, 1.0, 100.0, 100.0, 100.0];
-    Config.drumWaveIsSoft = [false, true, false, false, true, true, true, true, false, false, true, false];
-    Config._drumWaves = [null, null, null, null, null,];
+    Config.drumNames = ["retro", "white", "clang", "buzz", "hollow", "chime", "harsh", "static", "metallic", "empty", "cutter", "trill"]; // The place to add these is around line 290.
+    Config.drumVolumes = [0.25, 1.0, 0.4, 0.3, 1.5, 2, 10, 0.27, 1.0, 1.0, 0.25, 1.0];
+    Config.drumBasePitches = [69, 69, 69, 69, 96, 69, 69, 96, 96, 96, 96, 69, 1]; 
+    Config.drumPitchFilterMult = [100.0, 8.0, 100.0, 100.0, 1.0, 1.0, 1.0, 100.0, 1.0, 100.0, 100.0, 100.0, 50.0];
+    Config.drumWaveIsSoft = [false, true, false, false, true, true, true, true, false, false, true, false, true];
+    Config._drumWaves = [null, null, null, null, null,null, null, null, null, null, null, null,];
     Config.filterNames = ["none", "bright", "medium", "soft", "decay bright", "decay medium", "decay soft", "ring", "overtone", "faint", "quiet", "decay rounded"];
     Config.filterBases = [0.0, 2.0, 3.5, 5.0, 1.0, 2.5, 4.0, -1.0, 1.0, 5, 2.0, 5];
     Config.filterDecays = [0.0, 0.0, 0.0, 0.0, 10.0, 7.0, 4.0, 0.2, 0.0, 7.5, 0.0, 15];
     Config.filterVolumes = [0.2, 0.4, 0.7, 1.0, 0.5, 0.75, 1.0, 1.0, 1.0, 1.5, 0.06, 1.6];
-    Config.transitionNames = ["seamless", "sudden", "smooth", "slide", "spring", "subdued", "sing", "shudder"]; // The place to add these is around line 2580.
-    Config.effectNames = ["none", "vibrato light", "vibrato delayed", "vibrato heavy", "tremolo light", "tremolo heavy", "tremolo + vibrato", "shake", "quiver", "note destroyer"];
-    Config.effectVibratos = [0.0, 0.15, 0.3, 0.45, 0.0, 0.0, 1.0, 0.0, 0.001, 10];
-    Config.effectTremolos = [0.0, 0.0, 0.0, 0.0, 0.25, 0.5, 0.0, 1.0, 0.0, 10];
-    Config.effectVibratoDelays = [0, 0, 3, 0, 0, 0, 0, 3, 0, 0];
+    Config.transitionNames = ["seamless", "sudden", "smooth", "slide", "spring", "subdued", "sing", "shudder", "swap"]; // The place to add these is around line 2580.
+    Config.effectNames = ["none", "vibrato light", "vibrato delayed", "vibrato heavy", "tremolo light", "tremolo heavy", "tremolo + vibrato", "shake", "quiver", "note destroyer", "quiver delayed"];
+    Config.effectVibratos = [0.0, 0.15, 0.3, 0.45, 0.0, 0.0, 1.0, 0.0, 0.001, 10.0, 0.1];
+    Config.effectTremolos = [0.0, 0.0, 0.0, 0.0, 0.25, 0.5, 0.0, 1.0, 0.0, 10.0, 0.0];
+    Config.effectVibratoDelays = [0, 0, 3, 0, 0, 0, 0, 3, 0, 0, 3];
     Config.chorusNames = ["union", "shimmer", "hum", "honky tonk", "dissonant", "perfect fifths", "perfect octaves", "bowed", "harmonic", "harmonic hum", "seconds +", "ninths :)", "fluctuate", "recurve", "thin", "detune", "perfect fourths", "ninths :("];
     Config.chorusIntervals = [0.0, 0.02, 0.05, 0.1, 0.25, 3.5, 6, 0.02, 0.0, 0.05, 0.25, 7, 12, 0.005, 0.0, 0.0, 2.5, 6.5];
     Config.chorusOffsets = [0.0, 0.0, 0.0, 0.0, 0.0, 3.5, 6, 0.0, 0.0, 0.0, 3, 7, 0.0, 0.0, 50, 0.1, 2.5, 6.5];
@@ -497,8 +509,9 @@ var beepbox;
         "1 2 3←4",
         "(1 2 3)←4",
         "1 2 3 4",
+        "1←3, (2 3)←4",
     ];
-    Config.midiAlgorithmNames = ["1<(2 3 4)", "1<(2 3<4)", "1<2<(3 4)", "1<(2 3)<4", "1<2<3<4", "1<3 2<4", "1 2<(3 4)", "1 2<3<4", "(1 2)<3<4", "(1 2)<(3 4)", "1 2 3<4", "(1 2 3)<4", "1 2 3 4"];
+    Config.midiAlgorithmNames = ["1<(2 3 4)", "1<(2 3<4)", "1<2<(3 4)", "1<(2 3)<4", "1<2<3<4", "1<3 2<4", "1 2<(3 4)", "1 2<3<4", "(1 2)<3<4", "(1 2)<(3 4)", "1 2 3<4", "(1 2 3)<4", "1 2 3 4", "1<3 (2 3)<4"];
     Config.operatorModulatedBy = [
         [[2, 3, 4], [], [], []],
         [[2, 3], [], [4], []],
@@ -513,6 +526,7 @@ var beepbox;
         [[], [], [4], []],
         [[4], [4], [4], []],
         [[], [], [], []],
+        [[3], [4], [4], []],
     ];
     Config.operatorAssociatedCarrier = [
         [1, 1, 1, 1],
@@ -528,8 +542,9 @@ var beepbox;
         [1, 2, 3, 3],
         [1, 2, 3, 3],
         [1, 2, 3, 4],
+        [1, 1, 1, 1],
     ];
-    Config.operatorCarrierCounts = [1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 4];
+    Config.operatorCarrierCounts = [1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 4, 2];
     Config.operatorCarrierChorus = [0.0, 0.04, -0.073, 0.091];
     Config.operatorAmplitudeMax = 15;
     Config.operatorFrequencyNames = ["1×", "~1×", "2×", "~2×", "3×", "4×", "5×", "6×", "7×", "8×", "9×", "11×", "13×", "16×", "20×", "~20x"];
@@ -560,6 +575,12 @@ var beepbox;
         "1→3 2→4",
         "1→4 2→3",
         "1→2→3→4",
+		"1🗘2",
+		"1🗘3",
+		"1🗘4",
+		"2🗘3",
+		"2🗘4",
+		"3🗘4",
     ];
     Config.midiFeedbackNames = [
         "1",
@@ -580,6 +601,12 @@ var beepbox;
         "1>3 2>4",
         "1>4 2>3",
         "1>2>3>4",
+		"1-2",
+		"1-3",
+		"1-4",
+		"2-3",
+		"2-4",
+		"3-4",
     ];
     Config.operatorFeedbackIndices = [
         [[1], [], [], []],
@@ -600,6 +627,12 @@ var beepbox;
         [[], [], [1], [2]],
         [[], [], [2], [1]],
         [[], [1], [2], [3]],
+        [[2], [1], [], []],
+        [[3], [], [1], []],
+        [[4], [], [], [1]],
+        [[], [3], [2], []],
+        [[], [4], [], [2]],
+        [[], [], [4], [3]],
     ];
     Config.pitchChannelTypeNames = ["chip", "FM (expert)"];
     Config.instrumentTypeNames = ["chip", "FM", "noise"];
@@ -2714,6 +2747,10 @@ var beepbox;
 						}
 						else if (transition == 7) {
 							transitionVolumeTickEnd = 1.0;
+							resetPhases = true;
+						}
+						else if (transition == 8) {
+							transitionVolumeTickEnd = -5.0;
 							resetPhases = true;
 						}
 					}
@@ -7719,7 +7756,7 @@ var beepbox;
             this.mainLayer = div({ className: "beepboxEditor", tabIndex: "0" }, [
                 this._editorBox,
                 div({ className: "editor-widget-column" }, [
-                    div({ style: "text-align: center; color: #999;" }, [text("Sandbox 2.1.2")]),
+                    div({ style: "text-align: center; color: #999;" }, [text("Sandbox 2.1.3")]),
                     div({ className: "editor-widgets" }, [
                         div({ className: "editor-controls" }, [
                             div({ className: "playback-controls" }, [
