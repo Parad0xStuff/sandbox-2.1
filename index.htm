@@ -142,6 +142,7 @@
 					Jun. 15, 2018: 2.1.2: Happy anniversary! We've decided to add two Poniryoshk's (Contrabassoon (Wave) and Flute (FM)), along with a new Filter and new Frequency.<br/><br/>
 					Jun. 17, 2018: 2.1.3: Fixed Contrabassoon's name. Added a new Envelope, Swap, a new Effect, Quiver Delayed, a new Drum, Trill, and added a lot more Feedback options to FM, along with an Algorithm.<br/><br/>
 					Jul. 10, 2018: 2.1.4: Added the Guitar, Sunsoft Bass, and Double Bass waveforms, along with cleaning up some of the choruses and renaming Transitions back to Envelopes, along with part of the code being cleaned up. Also there is a 5th Modulator (Currently it dampens sound, but in the future, this'll be fixed).<br/><br/>
+					Jul. 12, 2018: 2.1.4.1: Fixed a thing and did a thing.<br/><br/>
 					</p>
 
 	<script type="text/javascript">
@@ -283,7 +284,18 @@ var beepbox;
             if (wave == null) {
                 wave = new Float32Array(32768);
                 Config._drumWaves[index] = wave;
-                if (index == 0) {
+/*                if (index == 0) { // Old Retro
+                    var drumBuffer = 1;
+                    for (var i = 0; i < 32767; i++) {
+                        wave_2[i] = (drumBuffer & 1) * 2.0 - 1.0;
+                        var newBuffer = drumBuffer >> 1;
+                        if (((drumBuffer + newBuffer) & 1) == 1) {
+                            newBuffer += 1 << 14;
+                        }
+                        drumBuffer = newBuffer;
+                    }
+				}*/
+                if (index == 0) { // Retro
                     var drumBuffer = 1;
                     for (var i = 0; i < 32768; i++) {
                         wave[i] = (drumBuffer & 1) * 2.0 - 1.0;
@@ -294,12 +306,12 @@ var beepbox;
                         drumBuffer = newBuffer;
                     }
                 }
-                else if (index == 1) {
+                else if (index == 1) { // White
                     for (var i = 0; i < 32768; i++) {
                         wave[i] = Math.random() * 2.0 - 1.0;
                     }
                 }
-                else if (index == 2) {
+                else if (index == 2) { // Clang
                     var drumBuffer = 1;
                     for (var i = 0; i < 32768; i++) {
                         wave[i] = (drumBuffer & 1) * 2.0 - 1.0;
@@ -310,7 +322,7 @@ var beepbox;
                         drumBuffer = newBuffer;
                     }
                 }
-                else if (index == 3) {
+                else if (index == 3) { // Buzz
                     var drumBuffer = 1;
                     for (var i = 0; i < 32768; i++) {
                         wave[i] = (drumBuffer & 1) * 2.0 - 1.0;
@@ -321,13 +333,13 @@ var beepbox;
                         drumBuffer = newBuffer;
                     }
                 }
-                else if (index == 4) {
+                else if (index == 4) { // Hollow
                     Config.drawNoiseSpectrum(wave, 10, 11, 1, 1, 0);
                     Config.drawNoiseSpectrum(wave, 11, 14, -2, -2, 0);
                     beepbox.inverseRealFourierTransform(wave);
                     beepbox.scaleElementsByFactor(wave, 1.0 / Math.sqrt(wave.length));
                 }
-				else if (index == 5) {
+				else if (index == 5) { // Chime
                     var drumBuffer = 1;
                     for (var i = 0; i < 32768; i++) {
                         wave[i] = (drumBuffer & 1) * 2.0 - 1.0;
@@ -338,7 +350,7 @@ var beepbox;
                         drumBuffer = newBuffer;
                     }
                 }
-                else if (index == 6) {
+                else if (index == 6) { // Harsh
                     var drumBuffer = 1;
                     for (var i = 0; i < 32768; i++) {
                         wave[i] = (drumBuffer & 1) * 4.0 / 11;
@@ -349,12 +361,12 @@ var beepbox;
                         drumBuffer = newBuffer;
                     }
                 }
-                else if (index == 7) {
+                else if (index == 7) { // Static
                     for (var i = 0; i < 32768; i++) {
                         wave[i] = Math.random() * 2.0 - 1.0;
                     }
                 }
-                else if (index == 8) {
+                else if (index == 8) { // Metallic 
                     var drumBuffer = 1;
                     for (var i = 0; i < 32768; i++) {
                         wave[i] = (drumBuffer & 1) / 2.0 + 0.5;
@@ -365,13 +377,13 @@ var beepbox;
                         drumBuffer = newBuffer;
                     }
                 }
-                else if (index == 9) {
+                else if (index == 9) { // Empty
                     Config.drawNoiseSpectrum(wave, 1, 11, 4, 1, 0);
                     Config.drawNoiseSpectrum(wave, 11, 4, -2, -2, 0);
                     beepbox.inverseRealFourierTransform(wave);
                     beepbox.scaleElementsByFactor(wave, 1.0 / Math.sqrt(wave.length));
                 }
-                else if (index == 10) {
+                else if (index == 10) { // Cutter
                     var drumBuffer = 1;
                     for (var i = 0; i < 32768; i++) {
                         wave[i] = (drumBuffer & 1) * 4.0 * Math.random(1, 15);
@@ -382,7 +394,7 @@ var beepbox;
                         drumBuffer = newBuffer;
                     }
                 }
-                else if (index == 11) {
+                else if (index == 11) { // Trill
                     var drumBuffer = 1;
                     for (var i = 0; i < 32768; i++) {
                         wave[i] = (drumBuffer & 1) / 4.0 * Math.random(1, 15);
@@ -463,8 +475,8 @@ var beepbox;
     Config.instrumentsPerChannelMax = 10;
     Config.partNames =           ["÷2 (quavers)", "÷3 (triplets)", "÷4 (standard)", "÷5 (quintuplets)", "÷6 (triplets +)", "÷8 (standard +)", "÷9 (nice)", "÷12 (hybrid)", "÷16 (arpfest)", "÷24 (hybrid +)", "÷50 (freestyle)"];
     Config.partCounts =          [2,              3,                4,               5,                 6,                  8,                 9,           12,             16,              24,              50               ];
-    Config.waveNames =           ["triangle", "square", "pulse wide", "pulse narrow", "sawtooth", "double saw", "double pulse", "spiky", "plateau", "glitch", "lute", "squaretooth", "lyre", "tuba", "piccolo", "shrill lute", "bassoon", "shrill bass", "nes pulse", "saw bass", "euphonium", "shrill pulse", "r-sawtooth", "recorder", "narrow saw", "deep square", "ring pulse", "sinusoid", "double sine", "contrabassoon", "guitar", "sunsoft bass", "double bass"]; // The place to add these is around line 640.
-    Config.waveVolumes =         [1.0,        0.5,      0.5,          0.5,            0.65,       0.5,          0.4,            0.4,     0.94,      0.5,      0.5,    0.25,          0.15,   0.4,    0.4,       0.94,          0.5,       0.5,           0.4,         0.25,       0.3,         0.3,            0.2,          0.2,        1.2,          1.0,           1.0,          1.7,        1.0,           0.5,             0.5,      1.0,            0.4          ];
+    Config.waveNames =           ["triangle", "square", "pulse wide", "pulse narrow", "sawtooth", "double saw", "double pulse", "spiky", "plateau", "glitch", "lute", "squaretooth", "lyre", "tuba"/*, "unnamed 5"*/, "piccolo", "shrill lute", "bassoon", "shrill bass", "nes pulse", "saw bass", "euphonium", "shrill pulse", "r-sawtooth", "recorder", "narrow saw", "deep square", "ring pulse", "sinusoid", "double sine", "contrabassoon", "guitar", "sunsoft bass", "double bass"]; // The place to add these is around line 640.
+    Config.waveVolumes =         [1.0,        0.5,      0.5,          0.5,            0.65,       0.5,          0.4,            0.4,     0.94,      0.5,      0.5,    0.25,          0.15,   0.4,  /*  0.4,       */  0.4,       0.94,          0.5,       0.5,           0.4,         0.25,       0.3,         0.3,            0.2,          0.2,        1.2,          1.0,           1.0,          1.7,        1.0,           0.5,             0.5,      1.0,            0.4          ];
     Config.drumNames =           ["retro", "white", "clang", "buzz", "hollow", "chime", "harsh", "static", "metallic", "empty", "cutter", "trill"]; // The place to add these is around line 290.
     Config.drumVolumes =         [0.25,    1.0,     0.4,     0.3,    1.5,      2,       10,      0.27,     1.0,        1.0,     0.25,     1.0    ];
     Config.drumBasePitches =     [69,      69,      69,      69,     96,       69,      69,      96,       96,         96,      96,       69     ]; 
@@ -475,7 +487,7 @@ var beepbox;
     Config.filterBases =         [0.0,    2.0,      3.5,      5.0,    1.0,            2.5,            4.0,          -1.0,   1.0,        5.0,     2.0,     5              ];
     Config.filterDecays =        [0.0,    0.0,      0.0,      0.0,    10.0,           7.0,            4.0,           0.2,   0.0,        7.5,     0.0,     15             ];
     Config.filterVolumes =       [0.2,    0.4,      0.7,      1.0,    0.5,            0.75,           1.0,           1.0,   1.0,        1.5,     0.06,    1.6            ];
-    Config.transitionNames =     ["seamless", "sudden", "smooth", "slide", "spring", "subdued", "sing", "shudder", "swap"]; // The place to add these is around line 2580.
+    Config.transitionNames =     ["binary", "sudden", "fade", "glide", "blip", "subdued", "sing", "abrupt", "rev"]; // The place to add these is around line 2580.
     Config.effectNames =         ["none", "vibrato light", "vibrato delayed", "vibrato heavy", "tremolo light", "tremolo heavy", "tremolo + vibrato", "shake", "quiver", "note destroyer", "quiver delayed"];
     Config.effectVibratos =      [0.0,    0.15,             0.3,              0.45,            0.0,             0.0,             1.0,                 0.0,     0.001,    10.0,             0.1             ];
     Config.effectTremolos =      [0.0,    0.0,              0.0,              0.0,             0.25,            0.5,             0.0,                 1.0,     0.0,      10.0,             0.0             ];
@@ -484,11 +496,11 @@ var beepbox;
     Config.chorusIntervals =     [0.0,     0.02,      0.05,  0.1,          0.25,        3.5,      6.0,       0.02,    0.0,        0.05,           0.25,     12.0,        0.005,     0.0,    0.0     ];
     Config.chorusOffsets =       [0.0,     0.0,       0.0,   0.0,          0.0,         3.5,      6.0,       0.0,     0.0,        0.0,            3.0,      0.0,         0.0,       50.0,   0.1     ];
     Config.chorusVolumes =       [0.7,     0.8,       1.0,   1.0,          0.9,         0.9,      0.8,       1.0,     0.7,        1.0,            0.9,      1.0,         0.8,       1.0,    0.7     ];
-    Config.chorusSigns =         [1.0,     1.0,       1.0,   1.0,          1.0,         1.0,      1.0,      -1.0,     1.0,        1.0,            1.0,     -1.0,        -1.0,       1.0,    1.0     ];
+    Config.chorusSigns =         [1.0,     1.0,       1.0,   1.0,          1.0,         1.0,      1.0,      -1.0,     1.0,        1.0,            1.0,     -1.0,         1.0,       1.0,    1.0     ];
     Config.chorusHarmonizes =    [false,   false,     false, false,        false,       false,    false,     false,   true,       true,           false,    false,       false,     false,  false   ];
     Config.volumeNames =         ["loudest", "loud", "medium", "quiet", "quietest", "mute"];
     Config.volumeValues =        [0.0,       0.5,    1.0,      1.5,     2.0,       -1.0   ];
-    Config.operatorCount = 5;
+    Config.operatorCount = 4;
     Config.operatorAlgorithmNames = [
         "1←(2 3 4)",
         "1←(2 3←4)",
@@ -504,44 +516,43 @@ var beepbox;
         "(1 2 3)←4",
         "1 2 3 4",
         "1←3, (2 3)←4",
-        "1 2 3 4 5",
     ];
-    Config.midiAlgorithmNames = ["1<(2 3 4)", "1<(2 3<4)", "1<2<(3 4)", "1<(2 3)<4", "1<2<3<4", "1<3 2<4", "1 2<(3 4)", "1 2<3<4", "(1 2)<3<4", "(1 2)<(3 4)", "1 2 3<4", "(1 2 3)<4", "1 2 3 4", "1<3 (2 3)<4", "1 2 3 4 5"];
+    Config.midiAlgorithmNames = ["1<(2 3 4)", "1<(2 3<4)", "1<2<(3 4)", "1<(2 3)<4", "1<2<3<4", "1<3 2<4", "1 2<(3 4)", "1 2<3<4", "(1 2)<3<4", "(1 2)<(3 4)", "1 2 3<4", "(1 2 3)<4", "1 2 3 4", "1<3 (2 3)<4"];
     Config.operatorModulatedBy = [
-        [[2, 3, 4], [],     [],  [], []],
-        [[2, 3],    [],     [4], [], []],
-        [[2],       [3, 4], [],  [], []],
-        [[2, 3],    [4],    [4], [], []],
-        [[2],       [3],    [4], [], []],
-        [[3],       [4],    [],  [], []],
-        [[],        [3, 4], [],  [], []],
-        [[],        [3],    [4], [], []],
-        [[3],       [3],    [4], [], []],
-        [[3, 4],    [3, 4], [],  [], []],
-        [[],        [],     [4], [], []],
-        [[4],       [4],    [4], [], []],
-        [[],        [],     [],  [], []],
-        [[3],       [4],    [4], [], []],
-        [[],        [],     [],  [], []],
+        [[2, 3, 4], [],     [],  [] ],
+        [[2, 3],    [],     [4], [] ],
+        [[2],       [3, 4], [],  [] ],
+        [[2, 3],    [4],    [4], [] ],
+        [[2],       [3],    [4], [] ],
+        [[3],       [4],    [],  [] ],
+        [[],        [3, 4], [],  [] ],
+        [[],        [3],    [4], [] ],
+        [[3],       [3],    [4], [] ],
+        [[3, 4],    [3, 4], [],  [] ],
+        [[],        [],     [4], [] ],
+        [[4],       [4],    [4], [] ],
+        [[],        [],     [],  [] ],
+        [[3],       [4],    [4], [] ],
+        [[],        [],     [],  [] ],
     ];
     Config.operatorAssociatedCarrier = [
-        [1, 1, 1, 1, 1],
-        [1, 1, 1, 1, 1],
-        [1, 1, 1, 1, 1],
-        [1, 1, 1, 1, 1],
-        [1, 1, 1, 1, 1],
-        [1, 2, 1, 2, 1],
-        [1, 2, 2, 2, 1],
-        [1, 2, 2, 2, 1],
-        [1, 2, 2, 2, 1],
-        [1, 2, 2, 2, 1],
-        [1, 2, 3, 3, 1],
-        [1, 2, 3, 3, 1],
-        [1, 2, 3, 4, 1],
-        [1, 1, 1, 1, 1],
-        [1, 2, 3, 4, 5],
+        [1, 1, 1, 1],
+        [1, 1, 1, 1],
+        [1, 1, 1, 1],
+        [1, 1, 1, 1],
+        [1, 1, 1, 1],
+        [1, 2, 1, 2],
+        [1, 2, 2, 2],
+        [1, 2, 2, 2],
+        [1, 2, 2, 2],
+        [1, 2, 2, 2],
+        [1, 2, 3, 3],
+        [1, 2, 3, 3],
+        [1, 2, 3, 4],
+        [1, 1, 1, 1],
+        [1, 2, 3, 4],
     ];
-    Config.operatorCarrierCounts =    [1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 4, 2, 5];
+    Config.operatorCarrierCounts =    [1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 4, 2];
     Config.operatorCarrierChorus =    [0.0, 0.04, -0.073, 0.091];
     Config.operatorAmplitudeMax =     15;
     Config.operatorFrequencyNames =   ["1×", "~1×", "2×", "~2×", "3×", "4×", "5×", "6×", "7×", "8×", "9×", "11×", "13×", "16×", "20×", "~20x"];
@@ -606,30 +617,30 @@ var beepbox;
 		"3-4",
     ];
     Config.operatorFeedbackIndices = [
-        [[1], [],  [],  [],  []],
-        [[],  [2], [],  [],  []],
-        [[],  [],  [3], [],  []],
-        [[],  [],  [],  [4], []],
-        [[1], [2], [],  [],  []],
-        [[],  [],  [3], [4], []],
-        [[1], [2], [3], [],  []],
-        [[],  [2], [3], [4], []],
-        [[1], [2], [3], [4], []],
-        [[],  [1], [],  [],  []],
-        [[],  [],  [1], [],  []],
-        [[],  [],  [],  [1], []],
-        [[],  [],  [2], [],  []],
-        [[],  [],  [],  [2], []],
-        [[],  [],  [],  [3], []],
-        [[],  [],  [1], [2], []],
-        [[],  [],  [2], [1], []],
-        [[],  [1], [2], [3], []],
-        [[2], [1], [],  [],  []],
-        [[3], [],  [1], [],  []],
-        [[4], [],  [],  [1], []],
-        [[],  [3], [2], [],  []],
-        [[],  [4], [],  [2], []],
-        [[],  [],  [4], [3], []],
+        [[1], [],  [],  []  ],
+        [[],  [2], [],  []  ],
+        [[],  [],  [3], []  ],
+        [[],  [],  [],  [4] ],
+        [[1], [2], [],  []  ],
+        [[],  [],  [3], [4] ],
+        [[1], [2], [3], []  ],
+        [[],  [2], [3], [4] ],
+        [[1], [2], [3], [4] ],
+        [[],  [1], [],  []  ],
+        [[],  [],  [1], []  ],
+        [[],  [],  [],  [1] ],
+        [[],  [],  [2], []  ],
+        [[],  [],  [],  [2] ],
+        [[],  [],  [],  [3] ],
+        [[],  [],  [1], [2] ],
+        [[],  [],  [2], [1] ],
+        [[],  [1], [2], [3] ],
+        [[2], [1], [],  []  ],
+        [[3], [],  [1], []  ],
+        [[4], [],  [],  [1] ],
+        [[],  [3], [2], []  ],
+        [[],  [4], [],  [2] ],
+        [[],  [],  [4], [3] ],
     ];
     Config.pitchChannelTypeNames =    ["chip", "FM (expert)"         ];
     Config.instrumentTypeNames =      ["chip", "FM",          "noise"];
@@ -688,6 +699,7 @@ var beepbox;
 /* Squaretooth    */		Config._centerWave([0.2, 1.0, 2.6, 1.0, 0.0, -2.4]),
 /* Lyre           */		Config._centerWave([1.0, -1.0, 4.0, 2.15, 4.13, 5.15, 0.0, -0.05, 1.0]),
 /* Tuba           */		Config._centerWave([1.0, -0.65, 1.1, 0.0, 0.8, 1.1]),
+// Unnamed 5         		Config._centerWave([1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0]),
 /* Piccolo        */		Config._centerWave([1, 4, 2, 1, -0.1, -1, -0.12]),
 /* Shrill Lute    */		Config._centerWave([1.0, 1.5, 1.25, 1.2, 1.3, 1.5]),
 /* Bassoon        */		Config._centerWave([1.0, -1.0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0]),
@@ -1991,7 +2003,7 @@ var beepbox;
                             instrumentObject =  channelObject.instruments[i];
                         if (instrumentObject == undefined)
                             instrumentObject = {};
-                        var oldTransitionNames = { "binary": 0 };
+                        var oldTransitionNames = { "seamless": 0, "smooth": 2, "slide": 3, "spring": 4, "shudder": 7, "swap": 8 };
                         var transitionObject = instrumentObject.transition || instrumentObject.envelope;
                         instrument.transition = oldTransitionNames[transitionObject] != undefined ? oldTransitionNames[transitionObject] : Config.transitionNames.indexOf(transitionObject);
                         if (instrument.transition == -1)
@@ -2025,7 +2037,8 @@ var beepbox;
                                 instrument.filter = oldFilterNames[instrumentObject.filter] != undefined ? oldFilterNames[instrumentObject.filter] : Config.filterNames.indexOf(instrumentObject.filter);
                                 if (instrument.filter == -1)
                                     instrument.filter =   0;
-                                instrument.chorus = Config.chorusNames.indexOf(instrumentObject.chorus);
+                                var oldChorusNames = { "perfect fifths": 5, "perfect octaves": 6, "custom harmony": 9, "seconds +": 10 };
+                                instrument.chorus = oldChorusNames[instrumentObject.chorus] != undefined ? oldChorusNames[instrumentObject.chorus] : Config.chorusNames.indexOf(instrumentObject.chorus);
                                 if (instrument.chorus == -1)
                                     instrument.chorus =   0;
                                 instrument.effect = Config.effectNames.indexOf(instrumentObject.effect);
